@@ -1,0 +1,8 @@
+Nsamp = 1;
+ang = [40];
+
+x_in = exp(1i*2*pi*rand(Nsnapshots,size(sU,1)))*sU;
+sv = phased.internal.steeringvec(pos,1,1,ang);
+sv = bsxfun(@times,sv,taper);
+
+x = x_in*sv.';

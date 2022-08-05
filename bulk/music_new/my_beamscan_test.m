@@ -1,0 +1,72 @@
+clc;clear;close all;
+
+numElements = 3;
+
+ula = phased.ULA('NumElements',numElements,'ElementSpacing',0.015);
+
+ang1 = [40; 0];          % First signal
+ang2 = [-20; 0];         % Second signal
+angs = [ang1 ang2];
+angs = [ang1];
+
+c = physconst('LightSpeed');
+fc = 300e6;              % Operating frequency
+lambda = c/fc;
+pos = getElementPosition(ula)/lambda;
+
+Nsamp = 1;
+
+nPower = 0;
+
+%rs = rng(2007);
+signal = sensorsig(pos,Nsamp,angs,0);
+figure;
+plot(unwrap(angle(signal(1,:))))
+figure;
+plot(abs(signal(1,:)))
+
+Fs = 2000e3;
+td = [0.00666093090230316,0.00666666666666667,0.00667240243103018];
+x_in = zeros(3,100);
+t = 0:1/Fs:.0001;
+for i = 1:100
+	d = rand(1,1);
+	a1 = sin(2*pi*30e3.*(t-d)+pi/10);
+	a2 = sin(2*pi*30e3.*(t-d));
+	a3 = sin(2*pi*30e3.*(t-d)-pi/10);
+	A1 = fft(a1)./length(a1);
+	A2 = fft(a2)./length(a2);
+	A3 = fft(a3)./length(a3);
+	[~,p1] = max(abs(A1));
+	[~,p2] = max(abs(A2));
+	[~,p3] = max(abs(A3));
+	x_in(1,i) = A1(p1)/(abs(A1(p1)));
+	x_in(2,i) = A2(p2)/(abs(A2(p3)));
+	x_in(3,i) = A3(p3)/(abs(A3(p3)));
+end
+figure;hold;
+plot(a1)
+plot(a2)
+plot(a3)
+
+signal = x_in';
+
+fc = 300e6;
+% figure;
+% plot(unwrap(angle(x_in(:,1))))
+%fc = 30e3;
+% signal = [cos(.8)+j*sin(.8),cos(.75)+j*sin(.75),cos(.7)+j*sin(.7)];
+figure;
+plot(unwrap(angle(signal(1,:))))
+figure;
+plot(abs(signal(1,:)))
+%signal = phased.Collector('Sensor',ula,'PropagationSpeed',1500);
+spatialspectrum = phased.BeamscanEstimator('SensorArray',ula,...
+            'OperatingFrequency',fc,'ScanAngles',-90:90,'PropagationSpeed',1500);
+
+spatialspectrum.DOAOutputPort = true;
+spatialspectrum.NumSignals = 1;
+[~,ang] = spatialspectrum(signal)
+
+figure;
+plotSpectrum(spatialspectrum);
